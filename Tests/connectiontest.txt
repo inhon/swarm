@@ -1,0 +1,9 @@
+START
+At time 161543 Connect Timer set.
+At time 161547Connected to the Internet
+At time 161550Connected to the Internet
+At time 161553Connected to the Internet
+At time 161556Connected to the Internet
+At time 161559Connected to the Internet
+At time 161602Connected to the Internet
+At time 161605Connected to the Internet
