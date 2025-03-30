@@ -30,7 +30,7 @@ ROVER_ALT = 15
 if(len(sys.argv) <4): 
     print("Should have 3 arguments: argv[] = [<'base' or 'rover'>, <base's IP>, <port number>]")
     sys.exit()
-if(sys.argv[1] == "base"):
+if(sys.argv[1] == "base"): #create base drone and TCP server 
     baseDrone = Drone(baseVehicleIP)
     print("=====BASE=====")
     ''' Setting up server '''
@@ -40,7 +40,7 @@ if(sys.argv[1] == "base"):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
     server.bind((ip,port))
     server.listen(5)
-    client, address = server.accept()
+    client, address = server.accept()  #
     print("Base Connection established")
     
     points = list()
