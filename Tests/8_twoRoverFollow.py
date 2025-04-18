@@ -19,10 +19,15 @@ from Internet import checkInternetConnection
 
 SEND_INTERVAL = 1
 SLEEP_LENGTH = 3
-BASE_ALT = 10
-ROVER1_ALT = 7
-ROVER2_ALT = 4
+BASE_ALT = 30
+ROVER1_ALT = 25
+ROVER2_ALT = 20
 
+
+baseVehicleIP="tcp:127.0.0.1:5762"
+rover1VehicleIP="tcp:127.0.0.1:5772"
+rover2VehicleIP="tcp:127.0.0.1:5782"
+# connection_string = "COM"
 
 if(len(sys.argv) <4): 
     print("Should have 3 arguments: argv[] = [<'base' or 'rover1' or 'rover2'>, <base's IP>, <port number>]")
@@ -33,22 +38,8 @@ if(sys.argv[1] == "base"):
         print("Should have 4 arguments: argv[] = [<'base' or 'rover1' or 'rover2'>, <base's IP>, <port number 1>, <port number 2>]")
         sys.exit()
 
-connection_strings = ["/dev/ttyACM0","/dev/tty.usbmodem14101"]
-# connection_string = "/dev/tty.usbmodem14101"
-
-''' Connect to vehicle '''
-for connection_string in connection_strings:
-    vehicle = Drone(connection_string)
-    if(vehicle.connected): break
-vehicle.setStateReport(3)
-
-''' Setting up a checker to see if internet connection works, otherwise land the vehicle'''
-checkConnectTimer = RepeatTimer(10,checkInternetConnection,args=(vehicle,))
-checkConnectTimer.start()
-print("Check Connect Timer Set")
-
-
 if(sys.argv[1] == "base"):
+    baseDrone = Drone(baseVehicleIP)
     print("=====BASE=====")
     ''' Setting up server '''
     ip = sys.argv[2]
@@ -69,35 +60,20 @@ if(sys.argv[1] == "base"):
 
     points = list()
     diff = 0.00000898
-    # points.append(LocationGlobalRelative(24.7882662,120.9951193,BASE_ALT))   # 操場右邊（面對司令台）跑道邊緣往中間兩公尺左右
-    # points.append(LocationGlobalRelative(24.7882345,120.9951183,BASE_ALT))   # 操場右邊（面對司令台）跑道邊緣
-
-    # 足球場繞一圈
-    # points.append(LocationGlobalRelative(24.7892049,120.9949241,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7891922,120.9947532,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7891273,120.9946344,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7889804,120.9946283,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7889459,120.9947165,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7889838,120.9948517,BASE_ALT))
-    # points.append(LocationGlobalRelative(24.7892049,120.9949241,BASE_ALT))
-
-    # 足球場小圈
-    points.append(LocationGlobalRelative(24.789401,120.9947823,BASE_ALT))
-    points.append(LocationGlobalRelative(24.789323,120.994714,BASE_ALT))
-    points.append(LocationGlobalRelative(24.7892379,120.9947158,BASE_ALT))
-    points.append(LocationGlobalRelative(24.7892076,120.9948308,BASE_ALT))
-    points.append(LocationGlobalRelative(24.789239,120.9949317,BASE_ALT))
-    points.append(LocationGlobalRelative(24.7894056,120.9949412,BASE_ALT))
- 
-
-    vehicle.takeoff(BASE_ALT)
+    # 圖書館前草皮繞一圈
+    points.append(LocationGlobalRelative(22.9052191,120.2724221,BASE_ALT))
+    points.append(LocationGlobalRelative(22.9051722,120.2719045,BASE_ALT))
+    points.append(LocationGlobalRelative(22.9048238,20.2719581,BASE_ALT))
+    points.append(LocationGlobalRelative(22.9049078,120.2724597,BASE_ALT))
+    
+    baseDrone.takeoff(BASE_ALT)
 
     # Tell rover 1 to take off
-    vehicle.sendInfo(client1, "TAKEOFF")
+    baseDrone.sendInfo(client1, "TAKEOFF")
     print("Sent TAKEOFF to rover 1")
 
     # Wait for "TOOKOFF" from rover
-    msg = vehicle.receiveInfo(client1)
+    msg = baseDronevehicle.receiveInfo(client1)
     if(msg != "TOOKOFF"):
         print("Received incorrect message from rover 1:", msg)
         sys.exit()
@@ -105,26 +81,26 @@ if(sys.argv[1] == "base"):
 
 
     # Tell rover 2 to take off
-    vehicle.sendInfo(client2, "TAKEOFF")
+    vbaseDrone.sendInfo(client2, "TAKEOFF")
     print("Sent TAKEOFF to rover 2")
 
     # Wait for "TOOKOFF" from rover
-    msg = vehicle.receiveInfo(client2)
+    msg = baseDrone.receiveInfo(client2)
     if(msg != "TOOKOFF"):
         print("Received incorrect message from rover 2:", msg)
         sys.exit()
     print("Received TOOKOFF from rover 2")
 
     # Start sending the coordinates
-    sendMsgTimer1 = RepeatTimer(SEND_INTERVAL,sendMsg, args=(vehicle,client1,))
+    sendMsgTimer1 = RepeatTimer(SEND_INTERVAL,sendMsg, args=(baseDrone,client1,))
     sendMsgTimer1.start()
-    sendMsgTimer2 = RepeatTimer(SEND_INTERVAL,sendMsg, args=(vehicle,client2,))
+    sendMsgTimer2 = RepeatTimer(SEND_INTERVAL,sendMsg, args=(baseDrone,client2,))
     sendMsgTimer2.start()
 
     # Start going to the pre-determined points
     for point in points:
         # 1. go to a pre-determined coordinate
-        vehicle.flyToPoint(point, 2)
+        baseDrone.flyToPoint(point, 2)
         time.sleep(SLEEP_LENGTH)
 
     # Stop sending coordinates
@@ -132,7 +108,7 @@ if(sys.argv[1] == "base"):
     sendMsgTimer2.cancel()
 
     # Tell rover 2 to land
-    vehicle.sendInfo(client2, "LAND")
+    vehbaseDrone.sendInfo(client2, "LAND")
     print("Sent LAND to rover 2")
 
     # Wait for "LANDED" from rover 2
@@ -143,7 +119,7 @@ if(sys.argv[1] == "base"):
     print("Received LANDED from rover 2")
 
     # Tell rover 1 to land
-    vehicle.sendInfo(client1, "LAND")
+    baseDrone.sendInfo(client1, "LAND")
     print("Sent LAND to rover 1")
 
     # Wait for "LANDED" from rover 1
@@ -154,18 +130,20 @@ if(sys.argv[1] == "base"):
     print("Received LANDED from rover 1")
 
     # Land the base drone
-    vehicle.land()
+    baseDrone.land()
 
 elif(sys.argv[1][0:5] == "rover"):
     if(sys.argv[1][-1] == "1"):
+        rover1Drone = Drone(rover1VehicleIP)
         print("=====ROVER 1=====")
         ROVER_ALT = ROVER1_ALT
     elif(sys.argv[1][-1] == "2"):
+        rover2Drone = Drone(rover2VehicleIP)
         print("=====ROVER 2=====")
         ROVER_ALT = ROVER2_ALT
     else:
         print("Incorrect Sequence Number of Rover")
-
+####################################################### 0331
     ''' Setting up client '''
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ip = sys.argv[2]
