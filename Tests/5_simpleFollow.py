@@ -17,7 +17,7 @@ sys.path.insert(0, parent_dir)
 
 from Drone import Drone
 from RepeatTimer import RepeatTimer, sendMsg
-from Internet import checkInternetConnection
+#from Internet import checkInternetConnection
 
 SEND_INTERVAL = 1 
 SLEEP_LENGTH = 0.5
@@ -86,7 +86,8 @@ elif(sys.argv[1] == "rover"):
             if(type(targetPoint) == LocationGlobalRelative):
                 targetPoint.alt = 15
                 print("Received target:",targetPoint)
-                roverDrone.flyToPoint(targetPoint, 3) #blocking
+                #roverDrone.flyToPoint(targetPoint, 3) #blocking
+                roverDrone.flyToPointNonBlocking(targetPoint, 5)
                 counter = counter+1
                 numInvalidMsg = 0
             else:

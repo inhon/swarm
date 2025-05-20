@@ -37,6 +37,7 @@ class Protocol():
             # assert(alt < 100)    # Assumes altitude below 100, if higher the message format requires adaptation
                 TCP_msg = "0"+ str("{:011.8f}".format(lat)) + str("{:012.8f}".format(lon)) + str("{:06.2f}".format(alt)) + str(current_time)
             else:
+                current_time = datetime.now().strftime("%M%S") 
                 lat=0.0
                 lon=0.0
                 TCP_msg = "0"+ str("{:011.8f}".format(lat)) + str("{:012.8f}".format(lon)) + str("{:06.2f}".format(alt)) + str(current_time)
@@ -99,7 +100,7 @@ class Protocol():
         angleDeg = (math.degrees(angleRad) + 360) % 360 #將bearing 轉為正數
         return angleDeg
     
-    def getFollowerPosition(self,vehicle,distMeter=20): 
+    def getFollowerPosition(self,vehicle,distMeter=10): 
         '''
         使用leader的經緯度與飛行方向(bearing)，計算於反飛行方向，距離leader distMeter 的經緯度
         '''

@@ -95,14 +95,14 @@ class Drone(dronekit.Vehicle):
         # point1 = LocationGlobalRelative(float(lat), float(lon), float(alt))
         self.vehicle.airspeed = speed #(m/sec)
         #print("Target Point: ({:12.8f},{:12.8f},{:5.2f})".format(targetPoint.lat,targetPoint.lon,targetPoint.alt))
-        targetDistance = get_distance_metres(self.vehicle.location.global_relative_frame, targetPoint)
+        targetDistance = getDistanceMetres(self.vehicle.location.global_relative_frame, targetPoint)
         print("Target distance: ",str(targetDistance))
 
         self.vehicle.simple_goto(targetPoint)
         print("Executed simple_goto()")
         #等待無人機飛到指定點
         while self.vehicle.mode.name=="GUIDED": #Stop action if we are no longer in guided mode.
-            remainingDistance=get_distance_metres(self.vehicle.location.global_relative_frame, targetPoint)
+            remainingDistance=getDistanceMetres(self.vehicle.location.global_relative_frame, targetPoint)
             print("Distance to target: ", remainingDistance)
             if remainingDistance<=1: #Just below target, in case of undershoot.
                 print("Reached target")
@@ -122,7 +122,7 @@ class Drone(dronekit.Vehicle):
 
         #print("Target Point: ({:12.8f},{:12.8f},{:5.2f})".format(targetPoint.lat,targetPoint.lon,targetPoint.alt))
 
-        targetDistance = get_distance_metres(self.vehicle.location.global_relative_frame, targetPoint)
+        targetDistance = getDistanceMetres(self.vehicle.location.global_relative_frame, targetPoint)
         #print("Target distance: ",str(targetDistance))
 
         self.vehicle.simple_goto(targetPoint)
@@ -240,13 +240,16 @@ class Drone(dronekit.Vehicle):
         # 3. Last possibility is the vehicle coordinates information
         else:
             lat, lon, alt, recvTime = val
+            if abs(lat) < 0.1 and abs(lon) < 0.1:
+                return None
+            
             print("Received Message:", lat, lon, alt, recvTime)
             p1 = LocationGlobalRelative(lat,lon,alt)
             
             currentTime = int(datetime.now().strftime("%S"))
             ''' If the received data was delayed for less than ___ seconds'''
             if(timeIsValid(curTime=currentTime,recvTime=recvTime)):
-                print("Distance to the received point:",get_distance_metres(p1,self.vehicle.location.global_frame))
+                print("Distance to the received point:",getDistanceMetres(p1,self.vehicle.location.global_frame))
                 return p1
             else:
                 print("Rover received an outdated message")
