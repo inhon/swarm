@@ -43,8 +43,8 @@ if(sys.argv[1] == "base"):
     baseDrone.takeoff(25) #Waiting for manual confirmation for takeoff. blocking
     sendMsgTimer = RepeatTimer(SEND_INTERVAL,sendMsg, args=(baseDrone, client,))
     '''
-    def sendMsg(drone, client):
-    drone.sendInfo(client, "COORDINATES")
+    def sendMsg(drone, client): #定義在RepeaterTimer.py，用來傳送follower要追隨的座標
+    drone.sendInfo(client, "COORDINATES") 
     '''
     sendMsgTimer.start()
     #baseDrone.takeoff(25)

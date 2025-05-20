@@ -207,6 +207,7 @@ class Drone(dronekit.Vehicle):
         print("Sent:",TCP_msg)
         '''
         self.protocol.sendMsg(client, msgName, self.vehicle) # vehicle 用來取得無人機位置
+
     # Rover Drone will need to receive Base's coordinates and keep following it (keep flyToPoint(Base's coordinates))
     def receiveInfo(self, client):
         '''
@@ -255,7 +256,6 @@ class Drone(dronekit.Vehicle):
         print("Close connection to vehicle")
         self.vehicle.close()
 
-
 def timeIsValid(recvTime, curTime):
     if(curTime >= recvTime):
         if(curTime-recvTime < ACCEPTED_DELAY): return True
@@ -266,7 +266,7 @@ def timeIsValid(recvTime, curTime):
     
     return True
 
-def get_distance_metres(aLocation1, aLocation2):
+def getDistanceMetres(aLocation1, aLocation2):
     """
     Returns the ground distance in metres between two LocationGlobal objects.
     This method is an approximation, and will not be accurate over large distances and close to the 
@@ -276,4 +276,6 @@ def get_distance_metres(aLocation1, aLocation2):
     dlat = float(aLocation2.lat) - float(aLocation1.lat)
     dlong = float(aLocation2.lon) - float(aLocation1.lon)
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+
 
