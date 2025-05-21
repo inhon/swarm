@@ -23,8 +23,11 @@ class Protocol():
     def __init__(self) -> None:
         pass
 
-    def sendMsg(self, client, msgName, vehicle=None):
+    def sendMsg(self, client, msgName, vehicle=None): 
         if msgName == "COORDINATES":
+            #傳入leader的vehicle，由leader的速度計算bearing，再由leader的位置計算follower的位置後傳給follower
+            #follower的位置以leader的飛行方向為軸進行計算，如無法計算出來，則經緯度設為0，follower如收到緯度為0，
+            #則直接忽略
             lat, lon = self.getFollowerPosition(vehicle, 20)
             #lat = float(vehicle.location.global_frame.lat)
             #lon = float(vehicle.location.global_frame.lon)
@@ -102,7 +105,8 @@ class Protocol():
     
     def getFollowerPosition(self,vehicle,distMeter=10): 
         '''
-        使用leader的經緯度與飛行方向(bearing)，計算於反飛行方向，距離leader distMeter 的經緯度
+        1.使用leader的經緯度與飛行方向(bearing)，計算於反飛行方向，距離leader distMeter 的經緯度
+        2.再來要計算2台follower位於leader後方，左右各45度的情況(TODO)
         '''
         R = 6371000  # 地球半徑（公尺）
         # 轉成弧度

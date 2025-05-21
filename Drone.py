@@ -127,6 +127,12 @@ class Drone(dronekit.Vehicle):
 
         self.vehicle.simple_goto(targetPoint)
         # print("Executed simple_goto()")
+    def flyToPointVelocity(self,targetPoint):
+        '''
+        計算飛到目標點的速度向量(NED frame)
+        1.利用目標點和無人機位置計算
+        '''
+
 
     def land(self):
         # Waiting for manual confirmation for landing
@@ -240,7 +246,7 @@ class Drone(dronekit.Vehicle):
         # 3. Last possibility is the vehicle coordinates information
         else:
             lat, lon, alt, recvTime = val
-            if abs(lat) < 0.1 and abs(lon) < 0.1:
+            if abs(lat) < 0.1 and abs(lon) < 0.1:  #如收到經緯度為0，代表無法計算出follower位置
                 return None
             
             print("Received Message:", lat, lon, alt, recvTime)

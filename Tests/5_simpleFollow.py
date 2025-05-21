@@ -83,11 +83,18 @@ elif(sys.argv[1] == "rover"):
             print("Enter Iteration",counter)
             targetPoint = roverDrone.receiveInfo(client)
         
-            if(type(targetPoint) == LocationGlobalRelative):
+            if(type(targetPoint) == LocationGlobalRelative): 
                 targetPoint.alt = 15
                 print("Received target:",targetPoint)
                 #roverDrone.flyToPoint(targetPoint, 3) #blocking
                 roverDrone.flyToPointNonBlocking(targetPoint, 5)
+                '''
+                TODO: 改為速度控制，
+                需要follower的位置後
+                1.由follower位置和目標位置以計算速度向量的方向(正規化)，送至控制器計算速度，以計算速度向量
+                2.計算follower位置和目標位置的差，送至控制器計算速度(deltaV)，速度為V+deltaV
+                3.進行速度控制
+                '''
                 counter = counter+1
                 numInvalidMsg = 0
             else:
