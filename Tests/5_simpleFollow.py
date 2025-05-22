@@ -92,8 +92,9 @@ elif(sys.argv[1] == "rover"):
                 TODO: 改為速度控制，
                 需要follower的位置後
                 1.由follower位置和目標位置以計算速度向量的方向(正規化)，送至控制器計算速度，以計算速度向量
-                2.計算follower位置和目標位置的差，送至控制器計算速度(deltaV)，速度為V+deltaV
+                2.計算follower位置和目標位置的差，送至控制器計算速度V,V要設上限為10m/sec
                 3.進行速度控制
+                roverDrone.flyToPointVelocity(targetPoint) # 
                 '''
                 counter = counter+1
                 numInvalidMsg = 0

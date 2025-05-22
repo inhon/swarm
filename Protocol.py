@@ -86,7 +86,7 @@ class Protocol():
     
     def getBearing(self,vehicle,speedTreshold=0.5):
         """
-        計算無人機實際飛行方向 bearing，北方為0，順時針
+        計算無人機實際飛行方向 bearing,北方為0,順時針
         當速度小於 speed_threshold(m/s)時，返回 None
         ehicle.velocity  -> [vx, vy, vz] 
         vx: Velocity in the North direction (m/s)
@@ -105,8 +105,8 @@ class Protocol():
     
     def getFollowerPosition(self,vehicle,distMeter=10): 
         '''
-        1.使用leader的經緯度與飛行方向(bearing)，計算於反飛行方向，距離leader distMeter 的經緯度
-        2.再來要計算2台follower位於leader後方，左右各45度的情況(TODO)
+        1.使用leader的經緯度與飛行方向(bearing),計算於反飛行方向,距離leader distMeter 的經緯度
+        2.再來要計算2台follower位於leader後方,左右各45度的情況(TODO)
         '''
         R = 6371000  # 地球半徑（公尺）
         # 轉成弧度
