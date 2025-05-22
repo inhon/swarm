@@ -1,5 +1,6 @@
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 import dronekit
+from pymavlink import mavutil # Needed for command message definitions
 import json
 import time
 import sys
@@ -261,6 +262,42 @@ class Drone(dronekit.Vehicle):
                 print("Rover received an outdated message")
                 print(currentTime,recvTime)
                 return None  
+    def send_global_velocity(self,velocity_x, velocity_y, velocity_z, duration):
+        """
+        Move vehicle in direction based on specified velocity vectors.
+
+        This uses the SET_POSITION_TARGET_GLOBAL_INT command with type mask enabling only 
+        velocity components 
+        (http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_global_int).
+        
+        Note that from AC3.3 the message should be re-sent every second (after about 3 seconds
+        with no message the velocity will drop back to zero). In AC3.2.1 and earlier the specified
+        velocity persists until it is canceled. The code below should work on either version 
+        (sending the message multiple times does not cause problems).
+        
+        See the above link for information on the type_mask (0=enable, 1=ignore). 
+        At time of writing, acceleration and yaw bits are ignored.
+        """
+        msg = self.vehicle.message_factory.set_position_target_global_int_encode(
+        0,       # time_boot_ms (not used)
+        0, 0,    # target system, target component
+        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # frame
+        0b0000111111000111, # type_mask (only speeds enabled)
+        0, # lat_int - X Position in WGS84 frame in 1e7 * meters
+        0, # lon_int - Y Position in WGS84 frame in 1e7 * meters
+        0, # alt - Altitude in meters in AMSL altitude(not WGS84 if absolute or relative)
+        # altitude above terrain if GLOBAL_TERRAIN_ALT_INT
+        velocity_x, # X velocity in NED frame in m/s
+        velocity_y, # Y velocity in NED frame in m/s
+        velocity_z, # Z velocity in NED frame in m/s
+        0, 0, 0, # afx, afy, afz acceleration (not supported yet, ignored in GCS_Mavlink)
+        0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
+
+    # send command to vehicle on 1 Hz cycle
+    for x in range(0,duration):
+        vehicle.send_mavlink(msg)
+        time.sleep(1)    
+
     def closeConn(self):
         print("Close connection to vehicle")
         self.vehicle.close()
@@ -285,6 +322,21 @@ def getDistanceMetres(aLocation1, aLocation2):
     dlat = float(aLocation2.lat) - float(aLocation1.lat)
     dlong = float(aLocation2.lon) - float(aLocation1.lon)
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+def get_bearing(aLocation1, aLocation2):
+    """
+    Returns the bearing between the two LocationGlobal objects passed as parameters.
+
+    This method is an approximation, and may not be accurate over large distances and close to the 
+    earth's poles. It comes from the ArduPilot test code: 
+    https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    """	
+    off_x = aLocation2.lon - aLocation1.lon
+    off_y = aLocation2.lat - aLocation1.lat
+    bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
+    if bearing < 0:
+        bearing += 360.00
+    return bearing;
 
 
 
