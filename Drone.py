@@ -13,7 +13,7 @@ from Protocol import Protocol
 import helper
 
 
-class Drone(dronekit.Vehicle):
+class Drone():
     # (22.9049399147239,120.272397994995,27.48,0) 長榮大學 圖書館前 機頭朝北
     def __init__(self, connection_string):  
         print("Connecting to vehicle on: %s" % connection_string)
@@ -28,8 +28,8 @@ class Drone(dronekit.Vehicle):
         #檢查無人機模式是否為land，只有在執行land後才設定為"land"
         self.stateReportTimer=None
         self.protocol = Protocol()
-        self.kp=1.2 # P gain for velocity control
-        self. speedLimit=15 #m/sec
+        self.kp=0.3 # P gain for velocity control
+        self.speedLimit=10 #m/sec
     
     def preArmCheck(self):
         print("Basic pre-arm checks")
@@ -144,7 +144,7 @@ class Drone(dronekit.Vehicle):
         distance=helper.getDistanceMetres(p1, p2)
         velocityMagnitude=self.kp* distance
         if velocityMagnitude > self.speedLimit:
-           velocityMagnitude=10 
+           velocityMagnitude=self.speedLimit 
         
         vn, vd=helper.getUnitVector(p1, p2) #North 和 East 的正規量
         vn=vn*velocityMagnitude
@@ -310,6 +310,7 @@ class Drone(dronekit.Vehicle):
         0, 0, 0, # afx, afy, afz acceleration (not supported yet, ignored in GCS_Mavlink)
         0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
         self.vehicle.send_mavlink(msg)
+        self.vehicle.flush()
         # send command to vehicle on 1 Hz cycle
         #for x in range(0,duration):
         #    vehicle.send_mavlink(msg)

@@ -19,7 +19,7 @@ from Drone import Drone
 from RepeatTimer import RepeatTimer, sendMsg
 #from Internet import checkInternetConnection
 
-SEND_INTERVAL = 1 
+SEND_INTERVAL = 0.5#1 
 SLEEP_LENGTH = 0.5
 baseVehicleIP="tcp:127.0.0.1:5762"
 roverVehicleIP="tcp:127.0.0.1:5772"
@@ -32,6 +32,7 @@ if(len(sys.argv) <4):
 if(sys.argv[1] == "base"):
     baseDrone = Drone(baseVehicleIP)
     print("=====BASE=====")
+    baseDrone.vehicle.groundspeed=6
     ''' Setting up server '''
     ip = sys.argv[2]
     port = int(sys.argv[3])
