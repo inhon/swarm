@@ -28,7 +28,7 @@ class Drone():
         #檢查無人機模式是否為land，只有在執行land後才設定為"land"
         self.stateReportTimer=None
         self.protocol = Protocol()
-        self.kp=0.3 # P gain for velocity control
+        self.kp=0.4 # P gain for velocity control
         self.speedLimit=10 #m/sec
     
     def preArmCheck(self):

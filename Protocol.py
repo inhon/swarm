@@ -28,12 +28,12 @@ class Protocol():
             #傳入leader的vehicle，由leader的速度計算bearing，再由leader的位置計算follower的位置後傳給follower
             #follower的位置以leader的飛行方向為軸進行計算，如無法計算出來，則經緯度設為0，follower如收到緯度為0，
             #則直接忽略
-            lat, lon = self.getFollowerPosition(vehicle, 20)
+            lat, lon = self.getFollowerPosition(vehicle, 10)
             #lat = float(vehicle.location.global_frame.lat)
             #lon = float(vehicle.location.global_frame.lon)
             alt = float(vehicle.location.global_relative_frame.alt)
             if (alt<0): alt=0.0
-            if lat is not None:
+            if lat is not None:  #如base是靜止，則lat 和 lon 是none
                 current_time = datetime.now().strftime("%M%S")     # This will turn the time into minute and second format, something like 0835 (08:35)
             # assert(lat <= 90 and lat >= -90)              
             # assert(lon <= 180 and lon >= -180)      
@@ -84,7 +84,7 @@ class Protocol():
         elif(msgName == "4"):
             return ("LANDED",)
     
-    def getBearing(self,vehicle,speedTreshold=0.5):
+    def getBearing(self,vehicle,speedTreshold=3):
         """
         計算無人機實際飛行方向 bearing,北方為0,順時針
         當速度小於 speed_threshold(m/s)時，返回 None
@@ -103,7 +103,7 @@ class Protocol():
         angleDeg = (math.degrees(angleRad) + 360) % 360 #將bearing 轉為正數
         return angleDeg
     
-    def getFollowerPosition(self,vehicle,distMeter=10): 
+    def getFollowerPosition(self, vehicle, distMeter=10): 
         '''
         1.使用leader的經緯度與飛行方向(bearing),計算於反飛行方向,距離leader distMeter 的經緯度
         2.再來要計算2台follower位於leader後方,左右各45度的情況(TODO)

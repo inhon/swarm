@@ -1,16 +1,16 @@
 import numpy as np
 import math
 from geopy.distance import geodesic
+import setting
 
 # Within Accepted Delay (in sec) the received data will be considered valid
-ACCEPTED_DELAY = 3 
 
 def timeIsValid(recvTime, curTime):
     if(curTime >= recvTime):
-        if(curTime-recvTime < ACCEPTED_DELAY): return True
+        if(curTime-recvTime < setting.ACCEPTED_DELAY): return True
         else: return False
     else:
-        if(curTime+60 -recvTime < ACCEPTED_DELAY): return True
+        if(curTime+60 -recvTime < setting.ACCEPTED_DELAY): return True
         else: return False
     
     return True

@@ -17,10 +17,10 @@ sys.path.insert(0, parent_dir)
 
 from Drone import Drone
 from RepeatTimer import RepeatTimer, sendMsg
+import helper
+import setting
 #from Internet import checkInternetConnection
 
-SEND_INTERVAL = 0.5#1 
-SLEEP_LENGTH = 0.5
 baseVehicleIP="tcp:127.0.0.1:5762"
 roverVehicleIP="tcp:127.0.0.1:5772"
 
@@ -32,7 +32,7 @@ if(len(sys.argv) <4):
 if(sys.argv[1] == "base"):
     baseDrone = Drone(baseVehicleIP)
     print("=====BASE=====")
-    baseDrone.vehicle.groundspeed=6
+    baseDrone.vehicle.airspeed=setting.BASE_SPEED
     ''' Setting up server '''
     ip = sys.argv[2]
     port = int(sys.argv[3])
@@ -42,20 +42,24 @@ if(sys.argv[1] == "base"):
     client, address = server.accept()
     print("Base Connection established")
     baseDrone.takeoff(25) #Waiting for manual confirmation for takeoff. blocking
-    sendMsgTimer = RepeatTimer(SEND_INTERVAL,sendMsg, args=(baseDrone, client,))
+    sendMsgTimer = RepeatTimer(setting.SEND_INTERVAL,sendMsg, args=(baseDrone, client,))
     '''
     def sendMsg(drone, client): #定義在RepeaterTimer.py，用來傳送follower要追隨的座標
-    drone.sendInfo(client, "COORDINATES") 
+        drone.sendInfo(client, "COORDINATES") 
+    
+    def sendInfo(self, client, msgName): #
+        self.protocol.sendMsg(client, msgName, self.vehicle) 
+    1. self.vehicle 用來取得base無人機位置
+    2. 使用msgName已發送對應訊息如"COORDINATES"、 "TAKEOFF"、 "TOOKOFF"...
+    3. 如是base發送座標，則在sendMsg內計算follower的位置進行發送
     '''
     sendMsgTimer.start()
-    #baseDrone.takeoff(25)
+   
     try:
        while(1):
-        #print("Base in while loop")
         time.sleep(1)
     except KeyboardInterrupt:
         baseDrone.vehicle.mode=VehicleMode("RTL")
-        #roverDrone.land()
         baseDrone.close()
 
 elif(sys.argv[1] == "rover"):
@@ -102,7 +106,7 @@ elif(sys.argv[1] == "rover"):
                 numInvalidMsg = 0
             else:
                 numInvalidMsg = numInvalidMsg + 1
-            time.sleep(SLEEP_LENGTH)
+            time.sleep(setting.SLEEP_LENGTH)
     except KeyboardInterrupt:
         roverDrone.vehicle.mode=VehicleMode("RTL")
         #roverDrone.land()
