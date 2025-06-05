@@ -34,7 +34,9 @@ class YawController:
         yaw_deg = (math.degrees(yaw) + 360) % 360
         return yaw_deg
 
-    def send_yaw_rate(self, yaw_rate):
+    def send_yaw_rate(self, yaw_rate): 
+        #ardupilot 不支援 https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html#set-attitude-target
+   
         msg = self.vehicle.message_factory.set_attitude_target_encode(
             0, 0, 0,
             0b00000100,
@@ -42,9 +44,26 @@ class YawController:
             0, 0, math.radians(yaw_rate),
             0.5
         )
+
+         '''
+         改成
+        create the CONDITION_YAW command using command_long_encode()
+        msg = vehicle.message_factory.command_long_encode(
+        0, 0,    # target system, target component
+        mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
+        0, #confirmation
+        heading,    # param 1, yaw in degrees
+        0,          # param 2, yaw speed deg/s
+        1,          # param 3, direction -1 ccw, 1 cw
+        is_relative, # param 4, relative offset 1, absolute angle 0
+        0, 0, 0)    # param 5 ~ 7 not used
+        直接給角度，不用YawController
+    '''
         self.vehicle.send_mavlink(msg)
         self.vehicle.flush()
 
+    
+    '''
     def turn_to(self, target_yaw, tolerance=2, max_rate=45, timeout=10):
         self.pid.reset()
         start = time.time()
@@ -74,6 +93,7 @@ class YawController:
 
             last_time = now
             time.sleep(0.1)
+        '''
 
 # --- GPS 轉局部座標誤差（公尺） ---
 def gps_to_local_offset_meters(origin, target):
