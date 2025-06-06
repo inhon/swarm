@@ -1,16 +1,12 @@
 from dronekit import connect, VehicleMode, LocationGlobalRelative
-import dronekit
 from pymavlink import mavutil # Needed for command message definitions
 import numpy as np
-import json
 import time
-import sys
-import math
-from threading import Timer
 from RepeatTimer import RepeatTimer
 from datetime import datetime
 from Protocol import Protocol
-import helper
+import helper, setting
+from Controller import PID
 
 
 class Drone():
@@ -28,9 +24,8 @@ class Drone():
         #檢查無人機模式是否為land，只有在執行land後才設定為"land"
         self.stateReportTimer=None
         self.protocol = Protocol()
-        self.kp=0.4 # P gain for velocity control
-        self.speedLimit=10 #m/sec
-    
+        self.pidController=PID(kp=0.6, ki=0, kd=0.2)
+            
     def preArmCheck(self):
         print("Basic pre-arm checks")
         # Don't try to arm until autopilot is ready
@@ -131,26 +126,27 @@ class Drone():
 
         self.vehicle.simple_goto(targetPoint)
         # print("Executed simple_goto()")
-    def flyToPointVelocity(self, targetPoint): #
+    
+    def flyToPointVelocity(self, targetPoint): #控制rover飛向目標點
         '''
         計算飛到目標點的速度向量(NED frame)
         1.利用目標點和無人機位置計算距離
         2.利用目標點和無人機位置計算方向
         3.使用P控制器控制朝向目標點點飛行的速度
-        4.每秒更新一次
+        4.每SEND_INTERVAL秒更新一次
         '''
         p1=self.vehicle.location.global_relative_frame
         p2=targetPoint
         distance=helper.getDistanceMetres(p1, p2)
-        velocityMagnitude=self.kp* distance
-        if velocityMagnitude > self.speedLimit:
-           velocityMagnitude=self.speedLimit 
-        
-        vn, vd=helper.getUnitVector(p1, p2) #North 和 East 的正規量
+        vn, vd=helper.getUnitVector(p1, p2) #計算由p1(rover位置)指向p2(rover飛向的目標點)的單位向量(North 和 East 的正規量)
+        velocityMagnitude=self.pidController.compute(distance, setting.SEND_INTERVAL)#將速度進行PID控制(SEND_INTERVAL秒鐘計算一次)
+        if velocityMagnitude > setting.ROVER_SPEED_LIMIT: #限制rover最高速度
+           velocityMagnitude=setting.ROVER_SPEED_LIMIT     
         vn=vn*velocityMagnitude
         vd=vd*velocityMagnitude
-        print("vn,vd,velocityMagnitude:", vn, vd,velocityMagnitude)
-        self.send_global_velocity(vn, vd)
+        #print("vn,vd,velocityMagnitude:", vn, vd,velocityMagnitude)
+        print("velocityMagnitude:",int(velocityMagnitude))
+        self.send_global_velocity(vn, vd) 
 
     def land(self):
         # Waiting for manual confirmation for landing
@@ -214,10 +210,11 @@ class Drone():
             print("State Report Cancelled")
         else:
             print("There is no State Report Timer Running")
-
-    # Base Drone will need to send its coordinates to Rover Drone
+    
     def sendInfo(self, client, msgName):
         '''
+        # Base 要傳送他的座標或訊息給rover，或rover要傳送回應給base使用
+        # 對於base而言是當作TCP server， rover 則為 TCP clent
         lat = float(self.vehicle.location.global_frame.lat)
         lon = float(self.vehicle.location.global_frame.lon)
         alt = float(self.vehicle.location.global_relative_frame.alt)
@@ -230,24 +227,11 @@ class Drone():
         client.send(TCP_msg.encode())
         print("Sent:",TCP_msg)
         '''
-        self.protocol.sendMsg(client, msgName, self.vehicle) # vehicle 用來取得無人機位置
-
-    # Rover Drone will need to receive Base's coordinates and keep following it (keep flyToPoint(Base's coordinates))
+        self.protocol.sendMsg(client, msgName, self.vehicle) #vehicle 用來取得無人機位置以計算rover的位置
+    
     def receiveInfo(self, client):
         '''
-        msg = client.recv(1024)
-        str_msg = msg.decode()
-        if(str_msg.find("LAND") != -1):
-            return 0
-
-        print("Received:",str_msg)
-        lat = float(str_msg[0:11])
-        lon = float(str_msg[11:23])
-        alt = float(str_msg[23:29])
-        recvTime = int(str_msg[31:33])
-        # assert(lat <= 90 and lat >= -90)               
-        # assert(lon <= 180 and lon >= -180)             
-        # assert(alt < 100)                   # Assumes altitude below 100, if higher the message format requires adaptation
+        Base 和 Rover 接收訊息用       
         '''
         val = self.protocol.recvMsg(client)
         # 1. If Protocol receives None, it is probably because of the connection has been closed
@@ -264,37 +248,24 @@ class Drone():
         # 3. Last possibility is the vehicle coordinates information
         else:
             lat, lon, alt, recvTime = val
-            if abs(lat) < 0.1 and abs(lon) < 0.1:  #如收到經緯度為0，代表無法計算出follower位置
+            if abs(lat) < 0.1 and abs(lon) < 0.1:  #如收到經緯度為0，代表base靜止中
                 return None
             
-            print("Received Message:", lat, lon, alt, recvTime)
-            p1 = LocationGlobalRelative(lat,lon,alt)
+            #print("Received Message:", lat, lon, alt, recvTime)
+            p1 = LocationGlobalRelative(lat,lon,alt) 
             
             currentTime = int(datetime.now().strftime("%S"))
             ''' If the received data was delayed for less than ___ seconds'''
             if(helper.timeIsValid(curTime=currentTime,recvTime=recvTime)):
-                print("Distance to the received point:", helper.getDistanceMetres(p1, self.vehicle.location.global_frame))
-                return p1
+                print("Distance to the received point:", int(helper.getDistanceMetres(p1, self.vehicle.location.global_frame)))
+                return p1 
             else:
                 print("Rover received an outdated message")
                 print(currentTime,recvTime)
                 return None  
+    
     def send_global_velocity(self, north, east, down=0):
-        """
-        Move vehicle in direction based on specified velocity vectors.
-
-        This uses the SET_POSITION_TARGET_GLOBAL_INT command with type mask enabling only 
-        velocity components 
-        (http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_global_int).
         
-        Note that from AC3.3 the message should be re-sent every second (after about 3 seconds
-        with no message the velocity will drop back to zero). In AC3.2.1 and earlier the specified
-        velocity persists until it is canceled. The code below should work on either version 
-        (sending the message multiple times does not cause problems).
-        
-        See the above link for information on the type_mask (0=enable, 1=ignore). 
-        At time of writing, acceleration and yaw bits are ignored.
-        """
         msg = self.vehicle.message_factory.set_position_target_global_int_encode(
         0,       # time_boot_ms (not used)
         0, 0,    # target system, target component
@@ -315,7 +286,7 @@ class Drone():
         #for x in range(0,duration):
         #    vehicle.send_mavlink(msg)
         #    time.sleep(1)   
-   
+    
     def closeConn(self):
         print("Close connection to vehicle")
         self.vehicle.close()

@@ -22,86 +22,34 @@ class PID:
         output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
         self.last_error = error
         return output
-
+'''
 # --- Yaw 控制器 ---
 class YawController:
     def __init__(self, vehicle, kp=0.8, ki=0.0, kd=0.2):
         self.vehicle = vehicle
         self.pid = PID(kp, ki, kd)
+        self.is_relative=False
 
     def get_current_yaw(self):
         yaw = self.vehicle.attitude.yaw
         yaw_deg = (math.degrees(yaw) + 360) % 360
         return yaw_deg
 
-    def send_yaw_rate(self, yaw_rate): 
+    def send_yaw(self, heading): 
         #ardupilot 不支援 https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html#set-attitude-target
-   
-        msg = self.vehicle.message_factory.set_attitude_target_encode(
-            0, 0, 0,
-            0b00000100,
-            [1, 0, 0, 0],  # 保持姿態
-            0, 0, math.radians(yaw_rate),
-            0.5
-        )
-
-         '''
-         改成
-        create the CONDITION_YAW command using command_long_encode()
-        msg = vehicle.message_factory.command_long_encode(
+              
+        msg = self.vehicle.message_factory.command_long_encode(
         0, 0,    # target system, target component
         mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
         0, #confirmation
         heading,    # param 1, yaw in degrees
         0,          # param 2, yaw speed deg/s
         1,          # param 3, direction -1 ccw, 1 cw
-        is_relative, # param 4, relative offset 1, absolute angle 0
+        self.is_relative, # param 4, relative offset 1, absolute angle 0
         0, 0, 0)    # param 5 ~ 7 not used
-        直接給角度，不用YawController
-    '''
+        #直接給角度，不用YawController
         self.vehicle.send_mavlink(msg)
-        self.vehicle.flush()
-
-    
-    '''
-    def turn_to(self, target_yaw, tolerance=2, max_rate=45, timeout=10):
-        self.pid.reset()
-        start = time.time()
-        last_time = start
-        while True:
-            now = time.time()
-            dt = now - last_time
-            current_yaw = self.get_current_yaw()
-
-            error = target_yaw - current_yaw
-            if error > 180: error -= 360
-            if error < -180: error += 360
-
-            output = self.pid.compute(error, dt)
-            yaw_rate = max(min(output, max_rate), -max_rate)
-
-            print(f"[Yaw] {current_yaw:.1f}°, err={error:.1f}°, rate={yaw_rate:.1f}")
-            self.send_yaw_rate(yaw_rate)
-
-            if abs(error) < tolerance:
-                print("[Yaw] 目標角度達成")
-                break
-
-            if now - start > timeout:
-                print("[Yaw] 超時停止")
-                break
-
-            last_time = now
-            time.sleep(0.1)
-        '''
-
-# --- GPS 轉局部座標誤差（公尺） ---
-def gps_to_local_offset_meters(origin, target):
-    delta_lat = target.lat - origin.lat
-    delta_lon = target.lon - origin.lon
-    x = delta_lon * 111320 * math.cos(math.radians(origin.lat))  # 東西向
-    y = delta_lat * 110540  # 南北向
-    return x, y
+        self.vehicle.flush() 
 
 # --- 位置控制器 ---
 class PositionController:
@@ -282,3 +230,4 @@ if __name__ == "__main__":
 
     print("任務完成，關閉連線")
     vehicle.close()
+'''

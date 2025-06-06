@@ -19,7 +19,7 @@ from Drone import Drone
 from RepeatTimer import RepeatTimer, sendMsg
 import helper
 import setting
-#from Internet import checkInternetConnection
+
 
 baseVehicleIP="tcp:127.0.0.1:5762"
 roverVehicleIP="tcp:127.0.0.1:5772"
@@ -44,7 +44,7 @@ if(sys.argv[1] == "base"):
     baseDrone.takeoff(25) #Waiting for manual confirmation for takeoff. blocking
     sendMsgTimer = RepeatTimer(setting.SEND_INTERVAL,sendMsg, args=(baseDrone, client,))
     '''
-    def sendMsg(drone, client): #定義在RepeaterTimer.py，用來傳送follower要追隨的座標
+    def sendMsg(drone, client): #定義在RepeaterTimer.py，用來傳送rover要追隨的座標
         drone.sendInfo(client, "COORDINATES") 
     
     def sendInfo(self, client, msgName): #
@@ -60,7 +60,7 @@ if(sys.argv[1] == "base"):
         time.sleep(1)
     except KeyboardInterrupt:
         baseDrone.vehicle.mode=VehicleMode("RTL")
-        baseDrone.close()
+        baseDrone.closeConn()
 
 elif(sys.argv[1] == "rover"):
     roverDrone = Drone(roverVehicleIP)
@@ -85,23 +85,15 @@ elif(sys.argv[1] == "rover"):
     #while(numInvalidMsg < 5 and counter<5):
     try:
         while True:
-            print("Enter Iteration",counter)
+            #print("Enter Iteration",counter)
             targetPoint = roverDrone.receiveInfo(client)
         
             if(type(targetPoint) == LocationGlobalRelative): 
                 targetPoint.alt = 15
-                print("Received target:",targetPoint)
+                #print("Received target:",targetPoint)
                 #roverDrone.flyToPoint(targetPoint, 3) #blocking
                 #roverDrone.flyToPointNonBlocking(targetPoint, 5)
                 roverDrone.flyToPointVelocity(targetPoint)
-                '''
-                TODO: 改為速度控制，
-                需要follower的位置後
-                1.由follower位置和目標位置以計算速度向量的方向(正規化)，送至控制器計算速度，以計算速度向量
-                2.計算follower位置和目標位置的差，送至控制器計算速度V
-                3.進行速度控制
-                roverDrone.flyToPointVelocity(targetPoint) # 
-                '''
                 counter = counter+1
                 numInvalidMsg = 0
             else:
@@ -110,7 +102,7 @@ elif(sys.argv[1] == "rover"):
     except KeyboardInterrupt:
         roverDrone.vehicle.mode=VehicleMode("RTL")
         #roverDrone.land()
-        roverDrone.close()
+        roverDrone.closeConn()
     # Terminate program and socket 
 else:
     print("Please specify which drone it is")
