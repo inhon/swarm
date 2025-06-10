@@ -5,7 +5,7 @@ from pymavlink import mavutil
 
 # --- PID 類別 ---
 class PID:
-    def __init__(self, kp, ki, kd):
+    def __init__(self, kp, ki, kd, speed):
         self.Kp = kp
         self.Ki = ki
         self.Kd = kd
@@ -16,12 +16,16 @@ class PID:
         self.integral = 0
         self.last_error = 0
 
-    def compute(self, error, dt):
-        self.integral += error * dt
-        derivative = (error - self.last_error) / dt if dt > 0 else 0
+    '''
+    #def compute(self, error, dt):
+    =def compute(self, error, speed):
+        #self.integral += error * dt
+        derivative= speed
+        #derivative = (error - self.last_error) / dt if dt > 0 else 0
         output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        self.last_error = error
+        #self.last_error = error
         return output
+    '''
 '''
 # --- Yaw 控制器 ---
 class YawController:

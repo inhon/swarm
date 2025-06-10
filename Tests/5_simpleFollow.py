@@ -57,7 +57,7 @@ if(sys.argv[1] == "base"):
    
     try:
        while(1):
-        time.sleep(1)
+            time.sleep(1)
     except KeyboardInterrupt:
         baseDrone.vehicle.mode=VehicleMode("RTL")
         baseDrone.closeConn()
@@ -91,9 +91,10 @@ elif(sys.argv[1] == "rover"):
             if(type(targetPoint) == LocationGlobalRelative): 
                 targetPoint.alt = 15
                 #print("Received target:",targetPoint)
+                roverDrone.flyToPointVelocity_vector(targetPoint) #控制rover飛向目標點
                 #roverDrone.flyToPoint(targetPoint, 3) #blocking
                 #roverDrone.flyToPointNonBlocking(targetPoint, 5)
-                roverDrone.flyToPointVelocity(targetPoint)
+                #roverDrone.flyToPointVelocity(targetPoint)
                 counter = counter+1
                 numInvalidMsg = 0
             else:

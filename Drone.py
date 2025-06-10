@@ -7,6 +7,8 @@ from datetime import datetime
 from Protocol import Protocol
 import helper, setting
 from Controller import PID
+from geopy.distance import geodesic
+
 
 
 class Drone():
@@ -24,7 +26,7 @@ class Drone():
         #檢查無人機模式是否為land，只有在執行land後才設定為"land"
         self.stateReportTimer=None
         self.protocol = Protocol()
-        self.pidController=PID(kp=0.6, ki=0, kd=0.2)
+        #self.pidController=PID(kp=0.6, ki=0, kd=-0.05)        
             
     def preArmCheck(self):
         print("Basic pre-arm checks")
@@ -112,20 +114,60 @@ class Drone():
 
             time.sleep(1)
 
-    def flyToPointNonBlocking(self,targetPoint, speed):
+    def flyToPointNonBlocking(self,targetPoint, speed=1):
         '''
         Non-blocking flyToPoint, so returning from this function does NOT guarantee the vehicle has reached the target.
         '''
+        p1=self.vehicle.location.global_relative_frame
+        p2=targetPoint
+        distance=helper.getDistanceMetres(p1, p2)
+        #vn, vd=helper.getUnitVector(p1, p2) #計算由p1(rover位置)指向p2(rover飛向的目標點)的單位向量(North 和 East 的正規量)
+        #velocityMagnitude=self.pidController.compute(distance, setting.SEND_INTERVAL)#將速度進行PID控制(SEND_INTERVAL秒鐘計算一次)
+        #velocityMagnitude=(distance*setting.KP)+(self.vehicle.groundspeed*setting.KD)
+        velocityMagnitude=(distance*setting.KP)
+        if velocityMagnitude > setting.ROVER_SPEED_LIMIT: #限制rover最高速度
+           velocityMagnitude=setting.ROVER_SPEED_LIMIT  
         # point1 = LocationGlobalRelative(float(lat), float(lon), float(alt))
-        self.vehicle.airspeed = speed
+        #self.vehicle.airspeed = speed
 
         #print("Target Point: ({:12.8f},{:12.8f},{:5.2f})".format(targetPoint.lat,targetPoint.lon,targetPoint.alt))
 
-        targetDistance = helper.getDistanceMetres(self.vehicle.location.global_relative_frame, targetPoint)
+        #targetDistance = helper.getDistanceMetres(self.vehicle.location.global_relative_frame, targetPoint)
         #print("Target distance: ",str(targetDistance))
 
-        self.vehicle.simple_goto(targetPoint)
+        self.vehicle.simple_goto(targetPoint, groundspeed=velocityMagnitude)
+        print("velocityMagnitude:",int(velocityMagnitude))
         # print("Executed simple_goto()")
+    
+    def limit_vector(self, vector):
+        if np.linalg.norm(vector) > setting.max_velocity:
+            vector = (vector / np.linalg.norm(vector)) * setting.max_velocity
+        return vector
+    
+    def flyToPointVelocity_vector(self, targetPoint): #控制rover飛向目標點
+        p1=self.vehicle.location.global_relative_frame
+        p2=targetPoint
+        current_pos = np.array([p1.lat, p1.lon])
+        desired_pos = np.array([p2.lat, p2.lon])
+          # Calculate error in meters
+        error_meters = np.array([
+            geodesic((current_pos[0], current_pos[1]), (desired_pos[0], current_pos[1])).meters,
+            geodesic((current_pos[0], current_pos[1]), (current_pos[0], desired_pos[1])).meters
+        ])
+        # Adjust sign based on direction
+        if desired_pos[0] < current_pos[0]:
+            error_meters[0] = -error_meters[0]
+        if desired_pos[1] < current_pos[1]:
+            error_meters[1] = -error_meters[1]
+
+        velocity_ned = np.array(self.vehicle.velocity)#vehicle.velocity =(North速度, East速度, Down速度)  # 單位是 m/s
+        control_input_vel = self.limit_vector(setting.K1 @ error_meters - setting.damping * velocity_ned[:2])
+        print("velocityMagnitude:",int(np.linalg.norm(control_input_vel)))
+        #formation_velocity =helper.calculate_formation_velocity(i, p1)
+        #control_input_vel += formation_velocity
+
+        #return self.limit_vector(control_input_vel)
+        self.send_global_velocity(control_input_vel[0], control_input_vel[1])
     
     def flyToPointVelocity(self, targetPoint): #控制rover飛向目標點
         '''
@@ -139,7 +181,8 @@ class Drone():
         p2=targetPoint
         distance=helper.getDistanceMetres(p1, p2)
         vn, vd=helper.getUnitVector(p1, p2) #計算由p1(rover位置)指向p2(rover飛向的目標點)的單位向量(North 和 East 的正規量)
-        velocityMagnitude=self.pidController.compute(distance, setting.SEND_INTERVAL)#將速度進行PID控制(SEND_INTERVAL秒鐘計算一次)
+        #velocityMagnitude=self.pidController.compute(distance, setting.SEND_INTERVAL)#將速度進行PID控制(SEND_INTERVAL秒鐘計算一次)
+        velocityMagnitude=(distance*setting.KP)+(self.vehicle.groundspeed*setting.KD)
         if velocityMagnitude > setting.ROVER_SPEED_LIMIT: #限制rover最高速度
            velocityMagnitude=setting.ROVER_SPEED_LIMIT     
         vn=vn*velocityMagnitude

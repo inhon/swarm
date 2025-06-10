@@ -21,7 +21,7 @@ class formation:
     '''
     def __init__(self):
         #self.formation=formation
-        self.offset=[(-20,0,0),   #隊形0 [後方]
+        self.offset=[(-10,0,0),   #隊形0 [後方]
                      (-20,-20,0),(-20,20,0), #隊形1 [左後, 右後]
                      (-20,-20,0),(-20,20,0),(20,20,0),(20,-20,0)] #隊形2 [左後 左上 右上 右下]
         #offset 是在FRD座標系統下，各台rover的位置偏移量
@@ -37,10 +37,11 @@ class formation:
             vehicle.location.global_relative_frame.lon,
             vehicle.location.global_relative_frame.alt
         )
-        vx, vy, vz = vehicle.velocity  # m/s
-        horizontalSpeed = math.sqrt(vx**2 + vy**2)
-        if horizontalSpeed < setting.SPEED_THRESHOLD:
-            return (None, None)  # base 靜止
+        
+        #vx, vy, vz = vehicle.velocity  # m/s
+        #horizontalSpeed = math.sqrt(vx**2 + vy**2)
+        #if horizontalSpeed < setting.SPEED_THRESHOLD:
+        #    return (None, None)  # base 速度慢，視為靜止
         f,r,d=self.offset[0]
         headingRad = vehicle.attitude.yaw
         roverPos=[]
@@ -74,7 +75,7 @@ class formation:
             # 再向東方向偏移
             finalPoint = distance(meters=e).destination(pointNorth, bearing=90)
             roverPos.append((finalPoint.latitude, finalPoint.longitude))
-        return roverPos
+        return roverPos #roverPos=[(lat1, lon1), (lat2, lon2)]
 
     def getRoverPosition_2(self, vehicle):
          
@@ -95,4 +96,4 @@ class formation:
             # 再向東方向偏移
             finalPoint = distance(meters=e).destination(pointNorth, bearing=90)
             roverPos.append((finalPoint.latitude, finalPoint.longitude))
-        return roverPos  
+        return roverPos  #roverPos=[(lat1, lon1), (lat2, lon2), (lat3, lon3), (lat4, lon4)] 

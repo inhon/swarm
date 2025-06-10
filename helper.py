@@ -48,7 +48,7 @@ def getUnitVector(p1, p2):
 
     return unit_vector[0], unit_vector[1]  # vn, ve
 
-def calculate_formation_velocity(self, i, uav_i_pos):
+def calculate_formation_velocity(i, uav_i_pos):
     """計算避免碰撞的速度向量（作用於 UAV i）"""
 
     collision_threshold = 10  # 設定碰撞避距閾值（公尺）
@@ -89,3 +89,4 @@ def calculate_formation_velocity(self, i, uav_i_pos):
             print(f"    -> UAV {i} Repulsion Vector from UAV {j}: {repulsion_velocity}")
 
     return v_formation
+
